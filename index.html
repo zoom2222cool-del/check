@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Чек Мазин</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; text-align: center; color: #333; }
+        .container { background: white; padding: 25px; width: 350px; margin: 20px auto; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; color: #1a1a1a; }
+        input { width: 90%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+        button { padding: 10px 15px; margin: 10px 5px; cursor: pointer; border: none; border-radius: 8px; font-weight: bold; transition: 0.3s; }
+        .btn-create { background: #007bff; color: white; }
+        .btn-create:hover { background: #0056b3; }
+        .btn-download { background: #28a745; color: white; }
+        .btn-download:hover { background: #218838; }
+        .btn-reset { background: #dc3545; color: white; }
+        
+        .receipt { 
+            background: white; 
+            padding: 20px; 
+            width: 300px; 
+            margin: 20px auto; 
+            border-radius: 5px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            position: relative;
+            color: black;
+            text-align: center;
+        }
+        .logo-img { display: block; margin: 0 auto 10px; max-width: 150px; height: auto; }
+        .line { border-top: 3px dashed black; margin: 15px 0; }
+        .big { font-size: 26px; font-weight: bold; letter-spacing: 2px; }
+        .qr-wrapper { text-align: center; margin-top: 15px; }
+        .qr-img { width: 140px; height: 140px; }
+        p { margin: 8px 0; font-size: 16px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Мазин Шоп</h2>
+    <input id="toy" placeholder="Название товара">
+    <input id="sum" placeholder="Сумма (грн)" type="number">
+    <input id="date" type="date">
+    <br>
+    <button class="btn-create" onclick="createCheck()">Создать чек</button>
+    <button class="btn-download" onclick="downloadCheck()">⬇ Скачать PNG</button>
+    <button class="btn-reset" onclick="resetCheck()">Сбросить номер</button>
+</div>
+
+<div id="output"></div>
+
+<script>
+// --- ИНСТРУКЦИЯ ДЛЯ КАРТИНОК ---
+// 1. Зайди на сайт "base64-image.de"
+// 2. Загрузи mazin.png и qr.png
+// 3. Скопируй полученный код и вставь его вместо ССЫЛОК ниже (в переменные mazinBase64 и qrBase64)
+
+let mazinBase64 = "mazin.png"; // Вставь сюда длинный код mazin.png
+let qrBase64 = "qr.png";       // Вставь сюда длинный код qr.png
+
+let checkNumber = localStorage.getItem("checkNumber");
+checkNumber = checkNumber ? parseInt(checkNumber) : 1;
+
+// Установка текущей даты по умолчанию
+document.getElementById('date').valueAsDate = new Date();
+
+function formatCheckNumber(n) { return String(n).padStart(6, '0'); }
+
+function createCheck() {
+    let toy = document.getElementById("toy").value;
+    let sum = document.getElementById("sum").value;
+    let date = document.getElementById("date").value;
+    
+    if(!toy || !sum || !date) { alert("Заполни все поля!"); return; }
+
+    document.getElementById("output").innerHTML = `
+    <div class="receipt" id="receipt">
+        <img src="${mazinBase64}" alt="Мазин" class="logo-img" id="main-logo">
+        <div class="line"></div>
+        <div class="big">ЧЕК</div>
+        <p>Дата: <b>${formatDate(date)}</b></p>
+        <p>Номер чека: <b>№ ${formatCheckNumber(checkNumber)}</b></p>
+        <p style="font-size:20px;">Товар: <b>${toy}</b></p>
+        <p style="font-size:22px;">ИТОГО: <b>${sum} грн</b></p>
+        <p>Оплата: Готівка <b>${sum} грн</b></p>
+        <div class="line"></div>
+        <div class="big">СПАСИБО ЗА ПОКУПКУ</div>
+        <div class="qr-wrapper">
+            <img src="${qrBase64}" class="qr-img" alt="QR-код">
+        </div>
+    </div>`;
+    
+    checkNumber++;
+    localStorage.setItem("checkNumber", checkNumber);
+}
+
+function formatDate(date) {
+    let d = new Date(date);
+    return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+}
+
+function downloadCheck() {
+    const receipt = document.getElementById("receipt");
+    if(!receipt) { alert("Сначала создай чек!"); return; }
+    
+    // Добавлен useCORS и allowTaint для работы с внешними картинками
+    html2canvas(receipt, { 
+        scale: 3, 
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: true
+    }).then(canvas => {
+        const link = document.createElement("a");
+        link.href = canvas.toDataURL("image/png");
+        link.download = `check_mazin_${formatCheckNumber(checkNumber-1)}.png`;
+        link.click();
+    }).catch(err => {
+        console.error(err);
+        alert("Ошибка при создании PNG. Проверь консоль (F12)");
+    });
+}
+
+function resetCheck() {
+    if(confirm("Сбросить номер чека на 1?")) {
+        localStorage.removeItem("checkNumber");
+        checkNumber = 1;
+        alert("Номер сброшен");
+    }
+}
+</script>
+
+</body>
+</html>
